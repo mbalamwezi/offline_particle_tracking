@@ -263,7 +263,7 @@ def modelinterpolants(tt,model):
         a = dss.rho.interp(x=dss.x,y=dss.y,z=-10) 
         
         # find density at 10m + 0.03
-        avalues = np.repeat(a.values[:,:,np.newaxis]+0.03,50,axis=2)
+        avalues = np.repeat(a.values[:,:,np.newaxis]+0.03,66,axis=2)
         
         # prepare arrays
         zz,yy,xx = np.meshgrid(dss.z,dss.y,dss.x,indexing='ij')   
