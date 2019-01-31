@@ -224,7 +224,7 @@ def getpartivar(parti,tt,model,interpolants):
 
     return parti
 
-def advectparticles(parti,particle,model):
+def advectparticles(parti,particles,model):
 
     """
     This routine projects the particle forward.
@@ -246,11 +246,11 @@ def advectparticles(parti,particle,model):
     """
     import numpy as np
     
-    timestep_leftover = particle['timestep']*86400
+    timestep_leftover = particle['timestep']*86400 # [s]
     while timestep_leftover!=0:
         # Find indices of cell faces surrounding the particle
         # position in x
-        face_im1 = np.where(model['xf']<=parti.x)[0][-1]
+        face_im1 = np.where(model['xf']<=parti.x)[0][-1] # [m]
         face_i = face_im1+1
         face_jm1 = np.where(model['yf']<=parti.y)[0][-1]
         face_j = face_jm1+1
@@ -289,7 +289,8 @@ def advectparticles(parti,particle,model):
         elif particle['direction']=='backward':
             direction = -1
         else:
-            raise ValueError('Direction must be forward or backward.')
+            print('Direction must be forward or backward.')
+            exit
         
         #A
         if direction*(model['uf'][face_im1,i2,i3])<0:
@@ -300,7 +301,7 @@ def advectparticles(parti,particle,model):
                 # Select the last cell instead of the first one
                     face_im1 = len(model['xf'])-2
                     face_i = len(model['xf'])-1
-                    parti['x'] = model_i
+                    parti['x'] = model['xf'][face_i]
                 
                 # If not at model boundary
                 else:
@@ -324,7 +325,7 @@ def advectparticles(parti,particle,model):
                     # Select the last cell instead of the first one
                         face_jm1 = len(model['yf'])-2
                         face_j = len(model['yf'])-1
-                        parti['y'] = model_j
+                        parti['y'] = model['yf'][face_j]
 
                 # If not at model boundary
                 else:
@@ -338,12 +339,11 @@ def advectparticles(parti,particle,model):
         #C
         if direction*model['wf'][i1,i2,face_km1]<0:
             if parti.z-model_km1 == 0:
-            
                 face_km1 = face_km1-1
                 face_k = face_k-1
         
         # Update the useful variables
-        model_im1 = model['xf'][face_im1]
+        model_im1 = model['xf'][face_im1] # [m]
         model_i = model['xf'][face_i]
         model_jm1 = model['yf'][face_jm1]
         model_j = model['yf'][face_j]
@@ -359,16 +359,16 @@ def advectparticles(parti,particle,model):
         
         # Compute Cell spacings in x, y, and z
         # Compute Dx,Dy,Dz
-        Dx = model_i-model_im1
+        Dx = model_i-model_im1 # [m]
         Dy = model_j-model_jm1
         Dz = model_k-model_km1
         
         # Compute some variables in x
-        rx0 = parti.x/Dx
+        rx0 = parti.x/Dx  # []
         rxim1 = model_im1/Dx
         rxi = model_i/Dx
-        betax = model['uf'][face_im1,i2,i3] - model['uf'][face_i,i2,i3]
-        deltax = -model['uf'][face_im1,i2,i3]- betax*rxim1
+        betax = model['uf'][face_im1,i2,i3] - model['uf'][face_i,i2,i3]  # [m3/s]
+        deltax = -model['uf'][face_im1,i2,i3]- betax*rxim1 # [m3/s]
         
         # Compute some variables in y
         ry0 = parti.y/Dy
@@ -392,11 +392,11 @@ def advectparticles(parti,particle,model):
         # differential equation changes, hence the if-loop
         # note that all the invuf, infvf, infwf can be infinite!
         if betax == 0:
-            invuf = 1/model['uf'][face_im1,i2,i3]
+            invuf = 1/model['uf'][face_im1,i2,i3] 
             # time to reach i-1 th face            
-            Dtmaxtemp[0] = (rxim1-rx0)*invuf*Dx*Dy*Dz
+            Dtmaxtemp[0] = (rxim1-rx0)*invuf*Dx*Dy*Dz # []
             # time to reach i th face
-            Dtmaxtemp[1] = (rxi-rx0)*invuf*Dx*Dy*Dz
+            Dtmaxtemp[1] = (rxi-rx0)*invuf*Dx*Dy*Dz # []
         else:
             invbetax = 1/betax
             # time to reach i-1 th face
@@ -446,7 +446,7 @@ def advectparticles(parti,particle,model):
                 intermediate_timestep = np.min([Dtmax,timestep_leftover])
                 
             timestep_leftover = timestep_leftover-intermediate_timestep
-            ds = intermediate_timestep/(Dx*Dy*Dz)
+            ds = intermediate_timestep/(Dx*Dy*Dz) # [s/m3]
             
             
         elif particle['direction']=='backward':
@@ -469,16 +469,16 @@ def advectparticles(parti,particle,model):
         # If no velocity gradient (i.e. beta == 0), the solution to the
         # differential equation changes, hence the if-loop
         if betax == 0:
-            rx1 = rx0 + model['uf'][face_im1,i2,i3]*ds;
+            rx1 = rx0 + model['uf'][face_im1,i2,i3]*ds #[]
         else:
-            rx1 = (rx0 + deltax*invbetax)*np.exp(-betax*ds)-(deltax*invbetax)
+            rx1 = (rx0 + deltax*invbetax)*np.exp(-betax*ds)-(deltax*invbetax) #[]
 
         if abs(rx1-rxim1)<1e-11:
             parti['x'] = model_im1
         elif abs(rx1-rxi)<1e-11:
             parti['x'] = model_i
         else:
-            parti['x'] = rx1*Dx
+            parti['x'] = rx1*Dx # m
         
         #=================
         #=== Assign y-position to particle.
@@ -486,7 +486,7 @@ def advectparticles(parti,particle,model):
         # If no velocity gradient (i.e. beta == 0), the solution to the
         # differential equation changes, hence the if-loop
         if betay == 0:
-            ry1 = ry0 + model['vf'][i1,face_jm1,i3]*ds;
+            ry1 = ry0 + model['vf'][i1,face_jm1,i3]*ds
         else:
             ry1 = (ry0 + deltay*invbetay)*np.exp(-betay*ds)-(deltay*invbetay)
 
@@ -496,13 +496,14 @@ def advectparticles(parti,particle,model):
             parti['y'] = model_j
         else:
             parti['y'] = ry1*Dy
+            
         #=================
         #=== Assign z-position to particle.
         #=================
         # If no velocity gradient (i.e. beta == 0), the solution to the
         # differential equation changes, hence the if-loop
         if betaz == 0:
-            rz1 = rz0 + model['wf'][i1,i2,face_km1]*ds;
+            rz1 = rz0 + model['wf'][i1,i2,face_km1]*ds
         else:
             rz1 = (rz0 + deltaz*invbetaz)*np.exp(-betaz*ds)-(deltaz*invbetaz)
 
@@ -513,25 +514,29 @@ def advectparticles(parti,particle,model):
         else:
             parti['z'] = rz1*Dz + parti['wsink']*intermediate_timestep
         
-        if model['periodic_ew'] == 1:
+        if model['periodic_ew']:
             # Wrap the domain around if periodicity
-            parti['x'] = parti.x % model['xf'][-1] #maximum of model.xf assumes xf to be sorted
+            parti['x'] = parti.x % model['xf'][-1] #maximum of model.xf
         
-        if model['periodic_ns'] == 1:
+        if model['periodic_ns']:
             # Wrap the domain around if periodicity
-            parti['y'] = parti.y % model['yf'][-1] #maximum of model.xf assumes xf to be sorted
+            parti['y'] = parti.y % model['yf'][-1] #maximum of model.xf
         
         # Particles can't go airborn (z>0), and stop tracking if too deep
-        if parti.z>0:
-            parti['z'] = 0
-        elif parti.z< model['zf'][0]: #minimum of zf
+        if parti.z >= model['zf'][-1]:
+            parti['z'] = 0.5*( model['zf'][-1] +  model['zf'][-2] )
+            
+        elif parti.z < model['zf'][0]: #minimum of zf
+            parti['x'] = np.nan
+            parti['y'] = np.nan
             parti['z'] = np.nan
             timestep_leftover=0
         
         # If hits a solid boundary, kill the particle
-        if parti.z>=model['yf'][-1] or parti.y<=model['yf'][0]:
+        if parti.y>=model['yf'][-1] or parti.y<=model['yf'][0]:
+            parti['x'] = np.nan
             parti['y'] = np.nan
+            parti['z'] = np.nan
             timestep_leftover=0
-
 
     return parti
