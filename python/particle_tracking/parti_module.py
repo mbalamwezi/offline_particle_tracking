@@ -224,7 +224,7 @@ def getpartivar(parti,tt,model,interpolants):
 
     return parti
 
-def advectparticles(parti,thetimestep,thedirection,model):
+def advectparticles(parti,particle,model):
 
     """
     This routine projects the particle forward.
@@ -246,7 +246,7 @@ def advectparticles(parti,thetimestep,thedirection,model):
     """
     import numpy as np
     
-    timestep_leftover = thetimestep*86400 # [s]
+    timestep_leftover = particle['timestep']*86400 # [s]
     while timestep_leftover!=0:
         # Find indices of cell faces surrounding the particle
         # position in x
@@ -284,9 +284,9 @@ def advectparticles(parti,thetimestep,thedirection,model):
         # is negative.
         
         # define direction of the tracking
-        if thedirection=='forward':
+        if particle['direction']=='forward':
             direction = 1
-        elif thedirection=='backward':
+        elif particle['direction']=='backward':
             direction = -1
         else:
             print('Direction must be forward or backward.')
@@ -435,7 +435,7 @@ def advectparticles(parti,thetimestep,thedirection,model):
         # location. Hence the imaginary number: does not matter how long,
         # the particle will never reach that face.
 #%           
-        if thedirection=='forward':
+        if particle['direction']=='forward':
             Dtmax = Dtmaxtemp[ (Dtmaxtemp>0) & (Dtmaxtemp.imag==0)].min().real
             # If the shortest time it would take the particle to reach a cell face
             # is shorter than the particle tracking timestep, then the integration
@@ -449,7 +449,7 @@ def advectparticles(parti,thetimestep,thedirection,model):
             ds = intermediate_timestep/(Dx*Dy*Dz) # [s/m3]
             
             
-        elif thedirection=='backward':
+        elif particle['direction']=='backward':
             Dtmax = Dtmaxtemp[ (Dtmaxtemp>0) & (Dtmaxtemp.imag==0)].min().real
             
             # If the shortest time it would take the particle to reach a cell face
