@@ -224,7 +224,7 @@ def getpartivar(parti,tt,model,interpolants):
 
     return parti
 
-def advectparticles(parti,particles,model):
+def advectparticles(parti,particle,model):
 
     """
     This routine projects the particle forward.
